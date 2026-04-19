@@ -1,0 +1,773 @@
+\documentclass[11pt, letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable, skins}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, calc}
+\usepackage{tabularx}
+\usepackage{multicol}
+\usepackage{fancyhdr}
+
+% --- Nippon Seasons palette ---
+\definecolor{kitsune}{HTML}{C3803A}   % fox, autumn
+\definecolor{aiiro}{HTML}{004C71}     % indigo, winter
+\definecolor{beni}{HTML}{B14A4A}      % crimson, summer
+\definecolor{matcha}{HTML}{7B8B4E}    % tea green, spring
+\definecolor{sumi}{HTML}{4A4A4A}      % ink
+
+% --- Typography ---
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\titleformat{\section}{\Large\bfseries\scshape}{}{0em}{}[\titlerule]
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+\titleformat{\subsection}{\large\bfseries}{}{0em}{}
+\titlespacing*{\subsection}{0pt}{8pt}{4pt}
+\titleformat{\subsubsection}{\normalsize\bfseries\itshape}{}{0em}{}
+\titlespacing*{\subsubsection}{0pt}{6pt}{3pt}
+\setlist[itemize]{nosep, leftmargin=1.4em, label=\textbullet, topsep=2pt}
+\setlist[enumerate]{nosep, leftmargin=1.8em, topsep=2pt}
+
+% --- Custom boxes (aligned with rl-at-scale semantics) ---
+% beni = north star / capstone callouts
+\newtcolorbox{northstar}{
+  colback=beni!5!white, colframe=beni!80!black, boxrule=0.6pt,
+  left=5pt, right=5pt, top=6pt, bottom=6pt,
+  fonttitle=\bfseries, title=North Star Metric
+}
+
+% aiiro = think-first / principles
+\newtcolorbox{principle}[1][]{
+  colback=aiiro!5!white, colframe=aiiro!70!black, boxrule=0.5pt,
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+  fonttitle=\bfseries\small, title={#1}
+}
+
+% matcha = phase goals / why-this-matters
+\newtcolorbox{phasebox}[1][]{
+  colback=matcha!5!white, colframe=matcha!70!black, boxrule=0.5pt,
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+  fonttitle=\bfseries, title=#1, breakable
+}
+
+% kitsune = exercises / coding steps
+\newtcolorbox{stepbox}[1][]{
+  colback=kitsune!4!white, colframe=kitsune!60!black, boxrule=0.4pt,
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+  fonttitle=\bfseries\small, title=#1, breakable
+}
+
+% sumi = taste checks / transferable principles
+\newtcolorbox{tastebox}{
+  colback=sumi!4!white, colframe=sumi!50!black, boxrule=0.4pt,
+  left=8pt, right=8pt, top=6pt, bottom=6pt
+}
+
+% --- Headers ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\scshape GPU Performance Engineering}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\begin{document}
+
+% --- Title page ---
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+{\large\scshape The Critical Path: Companion Guide}\\[0.5cm]
+{\Huge\bfseries GPU Performance Engineering}\\[0.3cm]
+{\LARGE\bfseries Study Guide}\\[0.8cm]
+{\Large From PMPP to Frontier Inference Kernels}\\[2.5cm]
+{\large Amiya Diwan}\\[0.8cm]
+{\today}
+\vfill
+\begin{northstar}
+\textbf{Compute cost per research experiment.}
+
+\smallskip
+A kernel optimization earns its place on this curriculum if it measurably reduces the dollar cost of an experiment in the research loop that produces better models. Specific bottlenecks and workloads shift with the frontier; this metric does not.
+\end{northstar}
+\vspace{1cm}
+\end{titlepage}
+
+% --- Principles page ---
+\thispagestyle{empty}
+\vspace*{1cm}
+\section*{Principles}
+
+Four tenets shape every exercise and optimization decision in this guide.
+
+\begin{principle}[{1. Follow the problem, not the silo.}]
+The hardest problems cross the boundary between systems engineering, ML research, economics, and hardware design. A slow training run might be a memory-bandwidth bottleneck or a policy gradient variance problem, and you cannot diagnose it from only one side.
+\end{principle}
+
+\begin{principle}[{2. Prioritize ruthlessly and test cheaply.}]
+Before building infrastructure around an idea, find the riskiest assumption, the one whose failure would make the rest irrelevant, and test it at the smallest informative scale. A 1M-parameter model on a single GPU can hit the same memory wall as a 70B model on a cluster, provided the experiment isolates that specific effect.
+\end{principle}
+
+\begin{principle}[{3. Cultivate taste.}]
+Develop your own understanding alongside using AI. There are no shortcuts, but the reward is that AI becomes your tool, not your crutch. The deliberate practice loop: \textbf{predict} an outcome from principled reasoning, \textbf{validate} outputs, \textbf{explain} the results, and \textbf{prioritize} the next loop with the highest probability of success.
+\end{principle}
+
+\begin{principle}[{4. Don't overfit to the stack.}]
+Master current tools deeply, but extract the transferable reasoning about \emph{why} systems behave the way they do. What counts as a valuable skill shifts year to year. An engineer who understands the principles on one platform can transfer to another in days, not months.
+\end{principle}
+
+\vfill
+\begin{tastebox}
+\textbf{What ``done'' means for each problem:}
+\begin{enumerate}
+\item Write a naive version and explain its bottleneck.
+\item Write an optimized version and \emph{predict} the speedup before measuring.
+\item Explain the gap between predicted and actual.
+\item Name the transferable principle, not just the CUDA syntax.
+\end{enumerate}
+\end{tastebox}
+
+\newpage
+\setcounter{tocdepth}{1}
+\tableofcontents
+
+\newpage
+\section*{About this revision (April 2026)}
+
+\textbf{Why this curriculum exists.} The research goal is reducing the cost of the experimental loop that produces better models. The April 2026 literature review identified three workloads where kernel throughput is a load-bearing cost: RLVF rollout generation (autoregressive decode is 60--80\% of RLVF wall time), adaptive-depth training in the Mixture-of-Recursions family, and long-context experiments. The exercises below target the hand-written boundary where \texttt{torch.compile} and CUTLASS stop paying off. The workloads at the frontier will change; the need for hand-written kernels at that boundary will not.
+
+\textbf{Companion codebase.} \textbf{kernel-forge} (\texttt{\~{}/Desktop/Karpathy/kernel-forge/}) provides the build system, runner, profiling harness, and stub kernels. You write the kernels; the repo measures, verifies, and plots them. Design spec: \texttt{docs/specs/2026-04-19-kernel-forge-design.md}. Paper catalog with PDFs: \texttt{\~{}/Desktop/Karpathy/papers/kernel-forge/INDEX.md}.
+
+\textbf{Trimmed critical path.} An April 2026 literature review confirmed seven exercises are load-bearing for the research goal, in this order:
+
+\medskip
+\begin{tabularx}{\textwidth}{@{}rlXl@{}}
+\toprule
+\textbf{\#} & \textbf{Exercise} & \textbf{Transferable principle} & \textbf{Phase} \\
+\midrule
+1 & matmul (naive) & Memory-bound bottleneck analysis & 2 \\
+2 & matmul (tiled) & Shared-memory tiling reduces global traffic & 2 \\
+3 & reduction & Tree parallelism, warp shuffle & 3 \\
+4 & cross\_entropy (fused) & Kernel fusion eliminates materialization & 4/6 \\
+5 & flash\_attention & Online algorithms replace materialization & 6 \\
+6 & quantized\_gemm & Bandwidth optimization via reduced precision & 6 \\
+7 & moe\_dispatch & Irregular parallelism, gather-compute-scatter & 6 \\
+\bottomrule
+\end{tabularx}
+
+\medskip
+Exercises retained from the original guide but \emph{not} on the critical path (histogram, conv2d, prefix-sum, sort, trimul) are labelled \textbf{optional}. They teach real concepts but are not prerequisites for the research direction.
+
+% ===================================================================
+\section{Phase 1: Hello World}
+% ===================================================================
+
+\begin{phasebox}[Goal]
+Working CUDA toolchain, basic thread indexing. $\sim$2~hours.
+\end{phasebox}
+
+\subsection{Read PMPP Ch\,1 (skim, $\sim$15\,min)}
+
+Section~1.1 only: the throughput-vs-latency mental model and the host/device distinction. CPUs optimize for latency on a single thread; GPUs optimize for throughput across thousands.
+
+\subsection{Read PMPP Ch\,2, Sections\,2.1--2.5 ($\sim$30\,min)}
+
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Section} & \textbf{Key Concept} \\
+\midrule
+2.1 & Data parallelism: independent computations on different data \\
+2.2 & CUDA C++ program structure: host code, kernel launches, grids \\
+2.3 & Vector addition example: the ``Hello World'' of CUDA \\
+2.4 & Device global memory and data transfer (\texttt{cudaMalloc}, \texttt{cudaMemcpy}) \\
+2.5 & Calling kernel functions (\texttt{<<<blocks, threads>>>}) \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Warmup: vector\_add (archived)}
+
+\begin{stepbox}[Toolchain Smoke Test: 30 minutes max]
+This warmup lives at \texttt{archive/pmpp\_v2/vectoradd\_py/} (completed popcorn submission). If you're rebuilding the toolchain on a fresh box, confirm you can launch a one-element-per-thread kernel and read back the result.
+
+\textbf{Predict:} What happens if you launch fewer threads than elements?
+
+If toolchain setup takes more than 30 minutes, your environment is broken. Fix it before touching anything harder.
+\end{stepbox}
+
+\subsection{Read PMPP Ch\,3 ($\sim$30\,min)}
+
+Multidimensional grids and data. Mapping threads to 2D/3D data, row-major linearization, the relationship between \texttt{blockIdx}, \texttt{threadIdx}, and flat array indices.
+
+\subsection{Warmup: grayscale (archived)}
+
+Lives at \texttt{archive/pmpp\_v2/grayscale\_py/}.
+
+\begin{stepbox}[First Predict-Before-Running Exercise]
+\textbf{Predict:} Does the weighted sum formula ($0.2989R + 0.587G + 0.114B$) affect memory access pattern, or just arithmetic?
+\end{stepbox}
+
+% ===================================================================
+\section{Phase 2: The Architecture Turn}
+% ===================================================================
+
+\begin{phasebox}[Goal]
+Understand GPU hardware well enough to make informed predictions. You do matmul twice; it is the most important exercise sequence in the plan. 4--5~hours.
+\end{phasebox}
+
+\subsection{Read PMPP Ch\,4, Sections\,4.1--4.4 ($\sim$30\,min)}
+
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Section} & \textbf{Key Concept} \\
+\midrule
+4.1 & Architecture of a modern GPU (SMs, SPs) \\
+4.2 & Block scheduling \\
+4.3 & Synchronization and transparent scalability \\
+4.4 & Warps and SIMD hardware: 32 threads in lockstep \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Read PMPP Ch\,4, Sections\,4.5--4.6 ($\sim$20\,min)}
+
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Section} & \textbf{Key Concept} \\
+\midrule
+4.5 & Control divergence: why branches are expensive \\
+4.6 & Warp scheduling and latency tolerance: how the GPU hides memory latency \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Read PMPP Ch\,5, Sections\,5.1--5.3 ($\sim$35\,min)}
+
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Section} & \textbf{Key Concept} \\
+\midrule
+5.1 & Memory access efficiency \\
+5.2 & CUDA memory types (global, shared, constant, registers) \\
+5.3 & Tiling for reduced memory traffic \\
+\bottomrule
+\end{tabularx}
+
+\textbf{Before coding:} Trace the tiled matmul algorithm by hand on a $4 \times 4$ example.
+
+\subsection{\texttt{kernels/matmul/1\_naive.cuh} (critical path \#1)}
+
+Implementation target: fill in the body of \texttt{sgemm\_naive} in \texttt{kernels/matmul/1\_naive.cuh}. Then:
+
+\begin{verbatim}
+make build
+make run EX=matmul K=1                 # your naive SGEMM
+make run EX=matmul K=0                 # cuBLAS baseline for the same shape
+make profile EX=matmul K=1             # ncu --set full
+\end{verbatim}
+
+\begin{stepbox}[Predict Before Profiling]
+\textbf{Predict:} What fraction of peak FLOP/s will you achieve? (Expect $<$5\%.)
+
+Compare measured GFLOP/s against \texttt{K=0} (cuBLAS). \textbf{Explain:} Why is it slow, in terms of memory transactions per FLOP?
+\end{stepbox}
+
+\subsection{Read PMPP Ch\,5 remaining + Ch\,6, Sections\,6.1--6.4 ($\sim$40\,min)}
+
+Memory coalescing, occupancy, shared memory bank conflicts. You now have a slow kernel. This reading should feel \emph{urgent}: you are diagnosing a real problem.
+
+\subsection{\texttt{kernels/matmul/2\_tiled.cuh} (critical path \#2)}
+
+\begin{verbatim}
+make run EX=matmul K=2                 # your tiled SGEMM
+make bench EX=matmul                   # sweep K=0,1,2 across sizes
+make plot EX=matmul                    # kernel_0 vs kernel_1 vs kernel_2 chart
+\end{verbatim}
+
+\begin{stepbox}[The Most Important Exercise in the Plan]
+\textbf{Predict the speedup before measuring.}
+
+\textbf{Explain the gap between predicted and actual.}
+
+If you understand \emph{why} your tiled kernel is faster, not just that it is, you have internalized the core of GPU performance engineering.
+\end{stepbox}
+
+\subsection{Read PMPP Ch\,6, Sections\,6.5--6.9 ($\sim$30\,min)}
+
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Section} & \textbf{Key Concept} \\
+\midrule
+6.5 & Thread coarsening \\
+6.6 & Loop unrolling \\
+6.7 & Double buffering \\
+6.8 & A checklist of optimizations \\
+6.9 & Optimization strategy \\
+\bottomrule
+\end{tabularx}
+
+% ===================================================================
+\section{Phase 3: Parallel Patterns}
+% ===================================================================
+
+\begin{phasebox}[Goal]
+Implement each fundamental parallel pattern. Critical path only: 1--2~hours (reduction). Full phase with all optional exercises: 6--8~hours.
+\end{phasebox}
+
+\textbf{On the critical path:} \texttt{reduction} (kernel-forge exercise \#3). Everything else in this phase is optional reading.
+
+\subsection{Reduction: Tree-Based Parallel Algorithms (critical path \#3)}
+
+\textbf{Read:} Ch\,10, Sections\,10.1--10.5 ($\sim$30\,min): reduction trees, simple kernel, control divergence, memory access divergence.\\
+\textbf{Code:} Fill \texttt{kernels/reduction/1\_divergent.cuh} --- the textbook tree with \texttt{if (tid \% (2*stride) == 0)} guards. Measure.\\
+\textbf{Read:} Ch\,10, Sections\,10.6--10.11 (25\,min): reducing global memory accesses, synchronization overhead, thread coarsening.\\
+\textbf{Code:} Fill \texttt{kernels/reduction/2\_coalesced.cuh} --- contiguous active lanes, then \texttt{\_\_shfl\_down\_sync} for the final warp. Compare.
+
+\begin{verbatim}
+make run EX=reduction K=1              # divergent baseline
+make run EX=reduction K=2              # coalesced + warp shuffle
+make profile EX=reduction K=2          # look at warp execution efficiency
+\end{verbatim}
+
+\textbf{Transferable principle:} Reduction is a primitive in every ML framework (loss functions, norms, softmax denominators). The tree structure generalizes to any associative operation. The warp-shuffle pattern returns in the softmax step of Phase~6 fused CE and FlashAttention.
+
+\subsection{Histogram: Contention via Privatization \emph{(optional)}}
+
+\textbf{Read:} Ch\,9, Sections\,9.1--9.4 ($\sim$25\,min): atomics, basic histogram kernel, latency and throughput of atomic operations, privatization.\\
+\textbf{Code:} Write naive global atomics first, then privatize to shared memory. Do both versions.\\
+\textbf{Read:} Ch\,9, Sections\,9.5--9.6 (15\,min): thread coarsening, thread-level privatization.
+
+\begin{tastebox}
+\textbf{Transferable principle:} Contention management via privatization. The same pattern appears in gradient accumulation, token counting, and anywhere concurrent writes collide.
+\end{tastebox}
+
+\subsection{Convolution: Halo Exchange \emph{(optional)}}
+
+\textbf{Read:} Ch\,7, Sections\,7.1--7.4 ($\sim$25\,min): background, basic kernel, memory bandwidth considerations, constant memory and caching.\\
+\textbf{Code:} Basic parallel convolution.\\
+\textbf{Read:} Ch\,7, Sections\,7.5--7.6 (20\,min): tiled convolution with halo cells, using caches for halo cells.
+
+\textbf{Transferable principle:} Halo exchange. The same pattern appears in distributed training, stencil computations, and fluid dynamics.
+
+\subsection{Scan: Work-Efficiency vs Span \emph{(optional)}}
+
+\textbf{Read:} Ch\,11, Sections\,11.1--11.2 ($\sim$25\,min): scan background, Kogge-Stone algorithm.\\
+\textbf{Code:} Implement Kogge-Stone.\\
+\textbf{Read:} Ch\,11 remaining (20\,min): work efficiency, Brent-Kung, segmented scan.\\
+\textbf{Predict:} Kogge-Stone vs Brent-Kung: which wins at $N=1024$ vs $N=10^6$?
+
+\textbf{Transferable principle:} The work-efficiency vs span tradeoff is the fundamental tension in parallel algorithm design.
+
+\subsection{Sort: Composing Primitives \emph{(optional)}}
+
+\textbf{Read:} Ch\,13 (merge) + Ch\,14, Sections\,14.1--14.5 ($\sim$40\,min): merge algorithm, co-rank function, radix sort, parallel merge sort.\\
+\textbf{Code:} Compose scan + merge into a sort.\\
+\textbf{Read:} Ch\,14, Sections\,14.6--14.8 (15\,min): thread coarsening to improve memory coalescing, other methods.\\
+\textbf{Predict:} At what $N$ does your GPU sort beat \texttt{torch.sort}?
+
+\begin{tastebox}
+\textbf{Transferable principle:} Composing parallel primitives. Sort $=$ scan $+$ merge $+$ scatter.
+\end{tastebox}
+
+% ===================================================================
+\section{Phase 4: First Cross-Entropy Pass}
+% ===================================================================
+
+\begin{phasebox}[Goal]
+Compose reduction + element-wise into a single-row kernel. Critical path only: 2--3~hours. With optional trimul: 3--4~hours.
+\end{phasebox}
+
+\textbf{On the critical path:} \texttt{cross\_entropy (naive)} --- kernel-forge exercise \#4, variant 1. The fused variant is revisited in Phase~6.
+
+\subsection{\texttt{kernels/cross\_entropy/1\_naive.cuh} (critical path \#4, warmup)}
+
+Cross-entropy fuses softmax (reduction), log, and element-wise operations into one pass:
+\[
+  L = -\sum_i y_i \log\!\left(\frac{e^{x_i}}{\sum_j e^{x_j}}\right)
+\]
+
+Fill in \texttt{cross\_entropy\_naive}. Three passes per row: max, exp-sum, gather-target. This is the ``before'' against which the fused version in Phase~6 is measured.
+
+\begin{verbatim}
+make run EX=cross_entropy K=1
+make profile EX=cross_entropy K=1      # look at HBM reads per row
+\end{verbatim}
+
+\textbf{Predict:} How many times is each logit read from HBM in the naive version?
+
+\subsection{\texttt{trimul} (BioML) \emph{(optional)}}
+
+Triangle matrix multiplication. Can you modify your tiled matmul for triangular structure? Tests principle~1: follow the problem, not the silo. Lives in \texttt{archive/princeton/} if you want the original popcorn problem framing.
+
+% ===================================================================
+\section{Phase 5: Bridge to Inference}
+% ===================================================================
+
+\begin{phasebox}[Goal]
+Connect PMPP hardware knowledge to real inference workloads. Set up profiling infrastructure. $\sim$half day.
+\end{phasebox}
+
+\subsection{Set up cloud GPU}
+
+\texttt{ncu} needs direct access to GPU hardware counters. Virtualized instances from the major hyperscalers (GCP/AWS/Azure) typically block these counters at the hypervisor level, which causes \texttt{ERR\_NVGPUCTRPERM} on every profile. Bare-metal or privileged-container providers work:
+
+\smallskip
+\begin{tabularx}{\textwidth}{@{}lXll@{}}
+\toprule
+\textbf{Provider} & \textbf{Access} & \textbf{A100} & \textbf{Profiling} \\
+\midrule
+Lambda Labs & Bare-metal & \$1.29/hr & works out of the box \\
+Vast.ai & Docker (privileged) & \$0.70--1.10/hr & needs \texttt{--privileged} \\
+RunPod & Docker (Secure Cloud) & \$0.80--1.20/hr & use Secure Cloud tier \\
+\bottomrule
+\end{tabularx}
+
+\medskip
+\textbf{Validation step} (run before a long profiling session):
+
+\begin{verbatim}
+make build
+make run EX=matmul K=1                 # kernel runs
+ncu --set full ./build/matmul 1        # counters accessible
+\end{verbatim}
+
+If \texttt{ncu} returns \texttt{ERR\_NVGPUCTRPERM}, try a different instance. Set \texttt{CUDA\_COMPUTE\_CAPABILITY} in \texttt{CMakeLists.txt} to match the GPU (L4=89, A100=80, H100=90).
+
+\subsection{Autoregressive Decode Arithmetic Intensity}
+
+\begin{principle}[Think First (no computer)]
+Compute the arithmetic intensity for single-head attention decode with $d = 128$, 32 heads, context length $S = 2048$.
+
+Per head: $4dS$ FLOPs, $\approx 4dS$ bytes read.
+\[
+  I = \frac{\text{FLOPs}}{\text{bytes}} = \frac{4dS}{4dS} \approx 1 \;\text{FLOP/byte}
+\]
+
+On a chip with 1000\,TFLOP/s peak compute and 3\,TB/s bandwidth, the ridge point is $\approx 333$ FLOP/byte. At intensity~1:
+\[
+  \text{Throughput} = I \times \text{bandwidth} = 1 \times 3 \times 10^{12} = 3\;\text{TFLOP/s} \quad (0.3\%\;\text{of peak})
+\]
+
+\textbf{Key insight:} Autoregressive decode leaves the arithmetic units idle $>$99\% of the time, waiting for data. Faster compute does not help. Only bandwidth or data movement reduction helps.
+\end{principle}
+
+\subsection{FlashAttention Roofline Profiling}
+
+Profile FlashAttention decode latency across batch sizes 1, 8, 32, 64. For each batch size, compute:
+\begin{itemize}
+\item Achieved HBM bandwidth (bytes loaded / latency)
+\item Arithmetic intensity (FLOPs / bytes loaded)
+\item Attainable TFLOP/s from the roofline model
+\end{itemize}
+
+Plot all four points on the roofline diagram. Identify the crossover batch size where decode transitions from memory-bound to compute-bound.
+
+\subsection{Read rl-at-scale Ch\,2, Move\,2 (p.\,18--21)}
+
+Three kernel categories dominate RLVR inference wall time:
+\begin{itemize}
+\item \textbf{Attention kernels:} Naive attention materializes $O(N^2)$ intermediate scores. FlashAttention tiles Q, K, V into SRAM blocks, uses online softmax to accumulate without materializing the $N \times N$ matrix. HBM traffic drops from $\Theta(N^2 + Nd)$ to $\Theta(Nd)$.
+\item \textbf{Quantized matmuls:} Arithmetic intensity scales with precision. For an $N \times N$ GEMM:
+
+\smallskip
+\begin{tabularx}{0.85\textwidth}{@{}llll@{}}
+\toprule
+\textbf{Precision} & \textbf{Bytes/elem} & \textbf{Data loaded} & \textbf{Intensity} \\
+\midrule
+FP16 & 2 & $6N^2$ bytes & $N/3$ \\
+FP8 & 1 & $3N^2$ bytes & $2N/3$ \\
+FP4 & 0.5 & $1.5N^2$ bytes & $4N/3$ \\
+\bottomrule
+\end{tabularx}
+
+\smallskip
+For decode (effective $N \approx$ batch size $\times\, d$, typically $\ll 4096$), all precisions remain memory-bound.
+\item \textbf{MoE routing:} Gather-compute-scatter with irregular batch sizes per expert, load imbalance, and dispatch overhead.
+\end{itemize}
+
+% ===================================================================
+\section{Phase 6: Critical Kernel Implementations}
+% ===================================================================
+
+\begin{phasebox}[Goal]
+Build kernels at the hand-written boundary, where \texttt{torch.compile} and CUTLASS leave performance on the table. All simplified: algorithmic insight over micro-optimization. 4--6~weeks.
+\end{phasebox}
+
+\begin{northstar}
+From Phase~6 on, correctness is the floor. A kernel earns its place by moving measured throughput on one of the target workloads (attention decode, fused CE backward, INT4 GEMM, MoE dispatch) enough to change the dollar cost of an experiment in RLVF, adaptive-depth training, or long-context research.
+\end{northstar}
+
+\subsection{\texttt{kernels/cross\_entropy/2\_fused.cuh} (critical path \#4, fused)}
+
+Fill in \texttt{cross\_entropy\_fused} using the online-softmax recurrence: running max $m$ and denominator $d$, updated in a single pass over the logit row. Same recurrence you will use for FlashAttention next.
+
+\begin{verbatim}
+make run EX=cross_entropy K=2          # your fused version
+make bench EX=cross_entropy            # K=1 vs K=2 bandwidth curve
+\end{verbatim}
+
+\begin{stepbox}[Predict Before Fusing]
+\textbf{Predict:} How many DRAM round-trips does the naive (K=1) version require? How many does the fused (K=2) version need? What is the ratio?
+
+\textbf{Measure} the bandwidth savings. The \texttt{gbps} column in the benchmark CSV is the question.
+\end{stepbox}
+
+\textbf{Frontier:} The Liger-Kernel Fused-Linear-Cross-Entropy (FLCE, Hsu~et~al., arXiv:2410.10989) extends this by chunking the logit projection, softmax, CE, and backward into one pass without materializing the vocab-sized logit tensor ($\sim$60\% memory reduction). \texttt{torch.compile} cannot discover this pattern --- it must be hand-written. Read after your fused kernel works.
+
+\textbf{Transferable principle:} Kernel fusion eliminates intermediate materialization. Any pipeline of element-wise and reduction operations is a fusion candidate.
+
+\subsection{\texttt{kernels/flash\_attention/*.cuh} (critical path \#5, $\sim$2\,weeks)}
+
+\textbf{Target:} FlashAttention-2 forward (Dao, arXiv:2307.08691). Single-head, FP32, no masking, no dropout, forward pass only.
+
+\textbf{Core algorithm:} Online softmax (running max $+$ denominator), tiled QKV streaming through SRAM, accumulate output without materializing the $N \times N$ attention matrix.
+
+\textbf{Not in scope:} Tensor cores (\texttt{mma.sync}), async copy (\texttt{cp.async}), multi-stage pipelines, register pressure optimization.
+
+HBM traffic drops from $\Theta(N^2 + Nd)$ to $\Theta(Nd)$. This is the same tiling principle from PMPP Ch\,5 applied to attention.
+
+\textbf{Path:}
+\begin{enumerate}
+\item Fill \texttt{1\_naive\_attention.cuh} --- materializes the $N \times N$ score matrix as a correctness baseline.
+\item Fill \texttt{2\_flash\_forward.cuh} --- the online-softmax tiled version.
+\item \texttt{make bench EX=flash\_attention} --- watch the GFLOP/s gap close to naive at large $N$ as memory traffic stops dominating.
+\end{enumerate}
+
+\begin{stepbox}[Predict Before Implementing]
+\textbf{Predict:} For $N = 8192$ and $d = 128$, what is the ratio of naive attention HBM traffic to FlashAttention HBM traffic?
+
+\textbf{After implementing:} Does your measured bandwidth match the roofline prediction from Phase~5?
+\end{stepbox}
+
+\textbf{Frontier (read after FA-2 works):}
+\begin{itemize}
+\item \textbf{FlashAttention-3} (Shah~et~al., arXiv:2407.08608) --- Hopper-specific: warp specialization, async MMA, FP8.
+\item \textbf{FlashAttention-4} (Zadouri~et~al., arXiv:2603.05451) --- Blackwell: hardware-friendly producer-consumer pipelines.
+\end{itemize}
+All three extend the same algorithmic core; FA-2 is prerequisite. The same online-softmax state also underpins Ring Attention and PagedAttention.
+
+\textbf{Transferable principle:} Online algorithms (streaming computation with bounded memory) replace materialization wherever intermediate tensors exceed SRAM capacity.
+
+\subsection{\texttt{kernels/quantized\_gemm/*.cuh} (critical path \#6, $\sim$1--2\,weeks)}
+
+\textbf{Target:} INT4 weight-only GEMM with fused dequantization (Marlin, Frantar~et~al., arXiv:2408.11743 is the production reference).
+
+\textbf{Scope:} INT4 weights dequantized to FP32 on-the-fly, fused with matmul. Activations stay FP32. Load INT4 weights (0.5\,bytes/element), dequantize in registers, accumulate in FP32. Never materialize a dequantized weight tile.
+
+For decode at batch$=$1, the weight-matrix load from DRAM sets a hard floor on latency. INT4 quarters the bytes loaded, quartering the minimum latency. This is a bandwidth optimization, not a compute optimization.
+
+\begin{stepbox}[Predict Before Dequantizing]
+\textbf{Predict:} For a 7B model at H100's 3.35\,TB/s bandwidth, what is the minimum decode latency in FP16 vs INT4? (Hint: $14\,\text{GB} / 3350\,\text{GB/s}$ vs $3.5\,\text{GB} / 3350\,\text{GB/s}$.)
+\end{stepbox}
+
+\textbf{Frontier (read after your INT4 kernel works):}
+\begin{itemize}
+\item \textbf{FireQ} (arXiv:2505.20839) --- INT4-weight, FP8-activation fused kernel.
+\item \textbf{LiquidGEMM} (arXiv:2509.01229) --- W4A8 kernel pipelining.
+\item \textbf{FP6-LLM} (Xia~et~al., arXiv:2401.14112) --- FP6 algorithm--system co-design.
+\item \textbf{RaZeR} (arXiv:2501.04052) --- NVFP4 quantization on Blackwell with native hardware support.
+\item \textbf{DeepGEMM} (DeepSeek) --- unified FP8/FP4/BF16 kernel library, production-grade.
+\end{itemize}
+
+\textbf{Transferable principle:} For memory-bound kernels, reducing precision is a bandwidth optimization. The compute (FP32 accumulation) stays the same; only the bytes moved change.
+
+\subsection{\texttt{kernels/moe\_dispatch/*.cuh} (critical path \#7, $\sim$2\,weeks)}
+
+\textbf{Target:} Top-1 gather--compute--scatter across $E$ experts, staged into three kernels (count, build permutation, per-expert GEMM, unpermute).
+
+\textbf{Context:} MoE forward passes underperform their theoretical arithmetic intensity due to dispatch overhead, load imbalance, and kernel-launch latency. Rollout-time attention and MoE routing are the two dominant costs in contemporary RLVF training.
+
+\textbf{Frontier (read after your staged version works):}
+\begin{itemize}
+\item \textbf{MegaBlocks} (Gale~et~al., arXiv:2211.15841) --- reformulates MoE as block-sparse GEMM so the expert dispatch collapses into a single grouped-GEMM launch.
+\item \textbf{MegaScale-MoE} (arXiv:2505.11432) --- hybrid expert parallelism with warp-group-level dispatch and communication overlap.
+\item \textbf{AdaFuse} (arXiv:2603.11873) --- adaptive fused switching kernels that eliminate separate routing/gating/FFN launches.
+\end{itemize}
+
+\textbf{Transferable principle:} Irregular parallelism. When work per thread varies dynamically, uniform resource allocation wastes compute. The same challenge appears in graph algorithms, sparse matrix operations, and variable-length sequence batching.
+
+% ===================================================================
+\section{Phase 7: KernelBench Challenge}
+% ===================================================================
+
+\begin{phasebox}[Goal]
+Validate kernel skills against a standardized benchmark. Prepare for capstone. 2--3~weeks.
+\end{phasebox}
+
+Stanford's KernelBench: 250 tasks across three difficulty levels.
+
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
+\toprule
+\textbf{Level} & \textbf{Description} & \textbf{Target} \\
+\midrule
+L1 & Simple operations: validate skills & Solve most \\
+L2 & Standard patterns: matmul variants, attention, norms & Match LLM baselines \\
+L3 & Complex fusions: multi-kernel pipelines & Attempt, learn from failures \\
+\bottomrule
+\end{tabularx}
+
+\medskip
+\textbf{Meta-goal:} Build intuition for what makes kernel generation hard. What patterns do LLMs struggle with? This directly informs the capstone.
+
+% ===================================================================
+\section{Phase 8: Capstone: KernelLLM Fine-Tune}
+% ===================================================================
+
+\begin{phasebox}[Goal]
+Apply RL to improve LLM kernel generation on a narrow domain. 6--8~weeks.
+\end{phasebox}
+
+\textbf{Base model:} Meta's KernelLLM-8B (open-weight, HuggingFace).\\
+\textbf{Target language:} Triton (KernelLLM's native target; learned here in context).\\
+\textbf{Domain:} Narrow: attention kernels or reduction/scan patterns (pick one).\\
+\textbf{RL algorithm:} GRPO with execution-time reward.\\
+\textbf{Training loop:} Generate kernel $\to$ compile $\to$ execute $\to$ measure $\to$ reward $\to$ update.
+
+\textbf{Hand-written CUDA vs Triton vs torch.compile.} After Phase~6 you'll have the CUDA intuition to judge each tool's boundary:
+
+\smallskip
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Tool} & \textbf{Handles well} \\
+\midrule
+\texttt{torch.compile}/Inductor & pointwise fusions, simple norms, matmul epilogues \\
+Triton & fused ops where discovery matters more than peak (Liger-Kernel, DRTriton) \\
+Hand-written CUDA & FLCE, FlashAttention fwd+bwd, sub-byte quant fusions, comm-overlap, activation recompute inside fused kernels, peak attention/GEMM \\
+CUTLASS/CuTe & production GEMM optimization \\
+ThunderKittens & FA-style tiled kernels at a higher abstraction than raw CUDA \\
+\bottomrule
+\end{tabularx}
+
+\medskip
+Existing work (CUDA-L1, DRTriton, Dr.\,Kernel) trains on broad benchmarks. A narrow-domain fine-tune with carefully designed reward shaping on a specific kernel family is a focused contribution. Phase~6 experience building kernels by hand provides unique insight into reward design: you know what makes a kernel \emph{fast} rather than just correct. Reimplementing a Phase~6 kernel (e.g., fused CE) in Triton before training is a natural bridge exercise.
+
+% ===================================================================
+\section{Phase 9: Portfolio and Circular Read}
+% ===================================================================
+
+\begin{phasebox}[Goal]
+Demonstrate transferable understanding and end-to-end systems thinking. 1--2~weeks.
+\end{phasebox}
+
+\textbf{Cross-Platform Attention Optimization:} Map your FlashAttention implementation from CUDA to TPU/Pallas. Focus on the conceptual mapping:
+
+\smallskip
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{GPU (CUDA)} & \textbf{TPU (Pallas)} \\
+\midrule
+Shared memory tiling & VMEM prefetching \\
+\texttt{\_\_syncthreads()} & Implicit tile synchronization \\
+Double buffering in shared memory & \texttt{Buffered(buffer\_count=2)} DMA \\
+\bottomrule
+\end{tabularx}
+
+\smallskip
+Tests principle~4: if you can only write it in CUDA, you learned syntax, not concepts.
+
+\begin{samepage}
+\textbf{Portfolio artifacts:}
+\begin{itemize}
+\item GitHub repository with all kernel implementations
+\item KernelBench results and analysis
+\item KernelLLM fine-tune results, model weights, training curves
+\item Written analysis connecting hardware reasoning to optimization decisions
+\end{itemize}
+\end{samepage}
+
+\textbf{Circular read:} Reread PMPP Ch\,4--5 and rl-at-scale Ch\,2. After building these kernels, the same pages read differently.
+
+% ===================================================================
+\section{Timeline}
+% ===================================================================
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}Xrrr@{}}
+\toprule
+\textbf{Phase} & \textbf{Critical path} & \textbf{With optional} & \textbf{Cumulative} \\
+\midrule
+1: Hello World & 2 hrs & 2 hrs & 2 hrs \\
+2: Architecture Turn & 4--5 hrs & 4--5 hrs & $\sim$7 hrs \\
+3: Parallel Patterns & 1--2 hrs & 6--8 hrs & $\sim$9--15 hrs \\
+4: First Cross-Entropy & 2--3 hrs & 3--4 hrs & $\sim$12--19 hrs \\
+5: Bridge to Inference & half day & half day & $\sim$16--23 hrs \\
+\midrule
+6: Critical Kernels & 4--6 weeks & 4--6 weeks & $\sim$5--7 weeks \\
+7: KernelBench & 2--3 weeks & 2--3 weeks & $\sim$8--10 weeks \\
+8: Capstone (KernelLLM) & 6--8 weeks & 6--8 weeks & $\sim$16--18 weeks \\
+9: Portfolio & 1--2 weeks & 1--2 weeks & $\sim$18--20 weeks \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\medskip
+Critical-path only, phases 1--5 fit in a long weekend. Phases 6--9 are the real work. The ``with optional'' column includes the off-path parallel-pattern exercises (histogram, conv2d, scan, sort, trimul); do them if you want the full PMPP tour, skip them if you want to get to kernel-forge Phase~6 fastest.
+
+% ===================================================================
+\section{References}
+% ===================================================================
+
+Full paper catalog (with PDFs) at \texttt{\~{}/Desktop/Karpathy/papers/kernel-forge/INDEX.md}. Build-system and profiling-workflow inspiration: Simon Boehm, \href{https://siboehm.com/articles/22/CUDA-MMM}{``How to Optimize a CUDA Matmul Kernel for cuBLAS-like Performance''} and \href{https://github.com/siboehm/CUDA-MMM}{siboehm/CUDA-MMM}.
+
+\subsection*{Foundations}
+\begin{enumerate}[label={[\arabic*]}]
+\item W.-m.~W.~Hwu, D.~B.~Kirk, and I.~El~Hajj, \textit{Programming Massively Parallel Processors}, 4th ed., Morgan Kaufmann, 2022.
+\item A.~Diwan, \textit{The Critical Path: RL at Scale}, 2026.
+\end{enumerate}
+
+\subsection*{Attention kernels}
+\begin{enumerate}[resume, label={[\arabic*]}]
+\item T.~Dao, ``FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning,'' arXiv:2307.08691, 2023.
+\item J.~Shah \textit{et~al.}, ``FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision,'' arXiv:2407.08608, 2024.
+\item T.~Zadouri \textit{et~al.}, ``FlashAttention-4: Hardware-Friendly Attention with Producer-Consumer Pipelines,'' arXiv:2603.05451, 2026.
+\end{enumerate}
+
+\subsection*{Kernel fusion}
+\begin{enumerate}[resume, label={[\arabic*]}]
+\item P.~Hsu \textit{et~al.}, ``Liger Kernel: Efficient Triton Kernels for LLM Training,'' arXiv:2410.10989, 2024.
+\item ``Deep Kernel Fusion for Transformers,'' arXiv:2602.11808, 2026.
+\end{enumerate}
+
+\subsection*{Quantized GEMM}
+\begin{enumerate}[resume, label={[\arabic*]}]
+\item E.~Frantar \textit{et~al.}, ``Marlin: Mixed-Precision Auto-Regressive Parallel Inference on Large Language Models,'' arXiv:2408.11743, 2024.
+\item ``FireQ: Fast INT4--FP8 Fused Kernel for Quantized LLM Inference,'' arXiv:2505.20839, 2025.
+\item ``LiquidGEMM: W4A8 Kernel Pipelining for Quantized GEMM,'' arXiv:2509.01229, 2025.
+\item H.~Xia \textit{et~al.}, ``FP6-LLM: Efficiently Serving Large Language Models Through FP6-Centric Algorithm--System Co-Design,'' arXiv:2401.14112, 2024.
+\item ``RaZeR: Redundant-Zero Remapping for NVFP4 Quantization,'' arXiv:2501.04052, 2025.
+\end{enumerate}
+
+\subsection*{MoE dispatch}
+\begin{enumerate}[resume, label={[\arabic*]}]
+\item T.~Gale \textit{et~al.}, ``MegaBlocks: Efficient Sparse Training with Mixture-of-Experts,'' arXiv:2211.15841, 2022.
+\item ``MegaScale-MoE: Hybrid Expert Parallelism with Optimized Communication,'' arXiv:2505.11432, 2025.
+\item ``AdaFuse: Adaptive Fused Switching Kernels for MoE,'' arXiv:2603.11873, 2026.
+\end{enumerate}
+
+\subsection*{Adaptive compute / research context}
+\begin{enumerate}[resume, label={[\arabic*]}]
+\item S.~Bae \textit{et~al.}, ``Mixture-of-Recursions: Learning Dynamic Recursive Depths for Adaptive Token-Level Computation,'' arXiv:2507.10524, 2025.
+\end{enumerate}
+
+\subsection*{Capstone (Phases 7--8)}
+\begin{enumerate}[resume, label={[\arabic*]}]
+\item Stanford Scaling Intelligence, ``KernelBench,'' 2025. \url{https://scalingintelligence.stanford.edu/blogs/kernelbench/}
+\item Meta, ``KernelLLM-8B,'' HuggingFace: \texttt{facebook/KernelLLM}, 2025.
+\item ``CUDA-L1: Contrastive RL for CUDA Optimization,'' arXiv:2507.14111, 2025.
+\item ``DRTriton: Synthetic Data RL for Triton,'' arXiv:2603.21465, 2026.
+\item ``Dr.\,Kernel: RL for Triton with Anti-Reward-Hacking,'' arXiv:2602.05885, 2026.
+\end{enumerate}
+
+\subsection*{Tooling (non-paper)}
+\begin{itemize}
+\item \href{https://github.com/deepseek-ai/DeepGEMM}{DeepGEMM} --- DeepSeek's unified FP8/FP4/BF16 kernel library.
+\item \href{https://github.com/HazyResearch/ThunderKittens}{ThunderKittens} --- Stanford tile-level attention framework.
+\item \href{https://github.com/linkedin/Liger-Kernel}{Liger-Kernel} --- LinkedIn's efficient LLM training kernels (Triton).
+\item \href{https://github.com/RightNow-AI/autokernel}{AutoKernel} --- autonomous kernel optimization framework.
+\end{itemize}
+
+\end{document}

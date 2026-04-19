@@ -1,0 +1,52 @@
+# Build artifacts
+build/
+*.o
+*.a
+*.obj
+
+# Benchmarks (keep dir, ignore contents)
+benchmark_results/*
+!benchmark_results/.gitkeep
+
+# Nsight Compute exports
+*.ncu-rep
+*.ncu-proj
+
+# LaTeX aux files (study-guide.tex build output)
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.nav
+*.snm
+*.vrb
+*.idx
+*.ind
+*.ilg
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local Claude Code settings
+.claude/
