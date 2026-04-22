@@ -9,3 +9,4 @@ Concepts learned through hands-on exercises. One page per transferable principle
 | [blocks-and-threads](blocks-and-threads.md) | Blocks exist because threads need a cooperating group that maps to physical SMs | grayscale_v2 |
 | [gpu-cpu-async](gpu-cpu-async.md) | CPU pushes to a command queue and moves on; GPU executes in order; sync only when forced | grayscale_v2 |
 | [warps-and-hardware-constraints](warps-and-hardware-constraints.md) | A warp is 32 lockstep threads — the real scheduling unit; block size must respect hardware limits | grayscale_v2 |
+| [memory-coalescing](memory-coalescing.md) | Warps form along threadIdx.x; which matrix index that drives decides whether a load is 1 transaction or 32 | matmul/1_naive |

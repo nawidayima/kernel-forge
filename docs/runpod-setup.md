@@ -84,25 +84,44 @@ df -h /workspace                                                # your 50GB netw
 apt list --installed 2>/dev/null | grep -E "cmake|git"          # check; apt-get install if missing
 ```
 
-If `cmake` or `git` are missing (varies by template):
-```bash
-# remote
-apt-get update && apt-get install -y cmake git build-essential
-```
+If `cmake` is missing (it will be on the stock CUDA-devel image — `apt-get install cmake` fails with "Unable to locate package" because the image ships a stripped apt sources list), don't try to fix apt. Use the bootstrap script in section 5a — it installs cmake into a venv on the **network volume**, so it survives pod termination.
 
-## 6. Get the code to the pod (one-time)
+## 6. Get the code to the pod
 
-Since the repo lives on your Mac and likely isn't pushed anywhere yet, use rsync from local:
+Since the repo lives on your Mac and likely isn't pushed anywhere yet, tar-pipe from local. **Don't use rsync** — it isn't installed on the stock CUDA-devel image and can't be apt-installed (see section 5).
 
 ```bash
-# local (macOS)
-rsync -avz --delete \
-  --exclude '.git' --exclude 'build/' --exclude 'benchmark_results/' \
-  ~/Desktop/Karpathy/kernel-forge/ \
-  runpod:/workspace/kernel-forge/
+# local (macOS) — initial sync and every re-sync
+cd ~/Desktop/Karpathy/kernel-forge
+tar czf - --exclude='.git' --exclude='build*' --exclude='benchmark_results' --exclude='archive' . \
+  | ssh runpod 'mkdir -p /workspace/kernel-forge && tar xzf - --no-same-owner -C /workspace/kernel-forge'
 ```
+
+The `--no-same-owner` flag suppresses harmless ownership errors (macOS uid 501 → root on pod). `LIBARCHIVE.xattr` warnings in the output are macOS extended attributes — ignore.
+
+**Iterative edits:** the highest-leverage workflow is VS Code Remote-SSH (section 8) — edits save directly on the pod, no re-sync needed. If you're editing on the Mac instead, rerun the tar-pipe above; it's idempotent.
 
 (If/when you push the repo to GitHub, swap to `git clone` on the pod.)
+
+## 6a. Bootstrap the pod (every new pod, one command)
+
+The stock CUDA-devel image doesn't ship `cmake`, and `pip install cmake` to the pod's local filesystem gets wiped when the pod terminates. `scripts/runpod-bootstrap.sh` fixes this by installing cmake into `/workspace/venv/` — which lives on the network volume and persists.
+
+```bash
+# remote — first command after every new SSH session
+source /workspace/kernel-forge/scripts/runpod-bootstrap.sh
+```
+
+What it does:
+- Creates `/workspace/venv/` and `pip install cmake` into it (only on first run — ~30s one-time, ~0s every subsequent run).
+- Prepends `/workspace/venv/bin` to `PATH` for this shell.
+- Arms the 4-hour autokill watchdog.
+
+If you want it automatic: since `~/.bashrc` is ephemeral, add it to the autoexec on every new pod:
+```bash
+# remote — once per new pod
+echo 'source /workspace/kernel-forge/scripts/runpod-bootstrap.sh' >> ~/.bashrc
+```
 
 ## 7. Build and run
 

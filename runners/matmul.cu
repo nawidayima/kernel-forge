@@ -25,27 +25,42 @@ int main(int argc, char **argv) {
     float *C = alloc_zero((size_t)M * N);
     float *C_ref = alloc_zero((size_t)M * N);
 
-    cublas_sgemm(A, B, C_ref, M, N, K);
+    // cuBLAS runs unconditionally — it's both the reference result for
+    // verification and the performance target for comparison.
+    auto cublas_launch = [&]() { cublas_sgemm(A, B, C_ref, M, N, K); };
+    float cublas_ms = run_kernel(cublas_launch);
 
-    float ms = 0.0f;
-    auto launch = [&]() {
-        dim3 block(32, 32);
-        dim3 grid((N + 31) / 32, (M + 31) / 32);
-        switch (kernel) {
-            case 0: cublas_sgemm(A, B, C, M, N, K); break;
-            case 1: sgemm_naive<<<grid, block>>>(M, N, K, A, B, C); break;
-            case 2: sgemm_tiled<32, 32, 32><<<grid, block>>>(M, N, K, A, B, C); break;
-            default: printf("Unknown kernel %d\n", kernel); std::exit(1);
-        }
-    };
-    ms = run_kernel(launch);
+    print_banner("matmul", kernel);
+    printf("  %-10s  M=%d  K=%d  N=%d\n", "shape", M, K, N);
 
-    verify(C, C_ref, (size_t)M * N, /*tol=*/1e-2f);
-    report_performance(M, K, N, ms);
+    float ms = cublas_ms;
+    if (kernel != 0) {
+        auto launch = [&]() {
+            dim3 block(32, 32);
+            dim3 grid((N + 31) / 32, (M + 31) / 32);
+            switch (kernel) {
+                case 1: sgemm_naive<<<grid, block>>>(M, N, K, A, B, C); break;
+                case 2: sgemm_tiled<32, 32, 32><<<grid, block>>>(M, N, K, A, B, C); break;
+                default: printf("Unknown kernel %d\n", kernel); std::exit(1);
+            }
+        };
+        ms = run_kernel(launch);
+        verify(C, C_ref, (size_t)M * N, /*tol=*/1e-2f);
+    }
 
-    double gflops = (2.0 * (double)M * K * N / (ms * 1e-3)) / 1e9;
-    printf("RESULT exercise=matmul kernel=%d M=%d K=%d N=%d ms=%.6f gflops=%.3f\n",
-           kernel, M, K, N, ms, gflops);
+    report_performance(M, K, N, ms, "perf");
+    if (kernel != 0) {
+        report_performance(M, K, N, cublas_ms, "cuBLAS");
+        double ratio = cublas_ms / ms;  // fraction of cuBLAS throughput (1.0 = parity)
+        printf("  %-10s  %.3f  (%.1f%% of cuBLAS)\n", "ratio", ratio, ratio * 100.0);
+    }
+    print_footer();
+
+    double flops = 2.0 * (double)M * (double)K * (double)N;
+    double gflops = flops / (ms * 1e-3) / 1e9;
+    double cublas_gflops = flops / (cublas_ms * 1e-3) / 1e9;
+    printf("RESULT exercise=matmul kernel=%d M=%d K=%d N=%d ms=%.6f gflops=%.3f cublas_ms=%.6f cublas_gflops=%.3f\n",
+           kernel, M, K, N, ms, gflops, cublas_ms, cublas_gflops);
 
     cudaFree(A); cudaFree(B); cudaFree(C); cudaFree(C_ref);
     return 0;

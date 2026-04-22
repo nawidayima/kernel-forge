@@ -19,4 +19,13 @@ __global__ void sgemm_naive(int M, int N, int K,
     //    col = blockIdx.x * blockDim.x + threadIdx.x
     // 2. Bounds check: if (row < M && col < N) ...
     // 3. Accumulate sum_k A[row * K + k] * B[k * N + col], write to C[row * N + col].
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row < M && col < N) {
+        float sum = 0;
+        for (int k = 0; k < K; ++k) {
+            sum += A[row * K + k] * B[N * k + col];
+        }
+        C[row * N + col] = sum;
+    }
 }
