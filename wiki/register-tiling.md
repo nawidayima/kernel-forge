@@ -73,4 +73,4 @@ Even with big register tiles, threads within a warp may end up loading SMEM chun
 ## Context
 
 **Source:** siboehm.com/articles/22/CUDA-MMM (Kernels 4, 5)
-**Question that led here:**
+**Question that led here:** "Are register tiles always square? What constrains the choice of TM and TN?"

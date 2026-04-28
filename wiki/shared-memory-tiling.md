@@ -62,7 +62,9 @@ Without tiling, computing one element of C reads 2K floats from GMEM. With a BM�
 
 Every FMA in the compute loop still reads its two operands from SMEM. The compute instructions become dominated by `LDS` (load-from-SMEM) — the SMEM pipeline saturates before the ALUs do. The next lever pulls repeated operands out of SMEM and into registers: see `register-tiling.md`.
 
+SMEM bandwidth itself can also be sabotaged by *bank conflicts* — column-strided access into a 2D shared tile can serialize a warp's load up to 32×. See `shared-memory-banks.md`.
+
 ## Context
 
 **Source:** siboehm.com/articles/22/CUDA-MMM (Kernel 3)
-**Question that led here:**
+**Question that led here:** "Are tiles always squares? How do you initialize tile dimensions, and what physical constraints does CUDA enforce on the choice?"

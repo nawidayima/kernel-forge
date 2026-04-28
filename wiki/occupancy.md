@@ -55,4 +55,4 @@ The question is never "maximize occupancy." It's:
 ## Context
 
 **Source:** siboehm.com/articles/22/CUDA-MMM (Kernel 3, referencing Volkov 2016)
-**Question that led here:**
+**Question that led here:** "What hardware constraints does CUDA enforce on the tile and block dimensions I can pick?"

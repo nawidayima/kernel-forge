@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cuda_runtime.h>
+#include <cassert>
 
 // Tiled SGEMM using shared memory.
 //   C (M x N) = A (M x K) * B (K x N)
@@ -23,4 +24,35 @@ __global__ void sgemm_tiled(int M, int N, int K,
     //      - Accumulate partial dot product for this thread's output element.
     //      - __syncthreads();
     // 3. Write acc to C[row, col].
+    assert (BK == BM);
+    assert (BK == BN);
+    assert (BK == blockDim.x);
+    assert (BK == blockDim.y);
+    int by = blockIdx.y;                            
+    int bx = blockIdx.x;                            
+    int ty = threadIdx.y;
+    int tx = threadIdx.x;
+
+    int col = bx*blockDim.x + tx;
+    int row = by*blockDim.y + ty;
+
+
+    __shared__ float Atile[BK*BK];
+    __shared__ float Btile[BK*BK];
+    float sum = 0;
+    for (int phase = 0; phase < K/BK; ++phase){ 
+
+        int A_load_col = phase*BK + tx;
+        int B_load_row = phase*BK + ty;
+        
+        if (row < M && col < N){
+            Atile[ty*BK+tx] = A[row*K + A_load_col];
+            Btile[ty*BK+tx] = B[B_load_row*N + col];
+            __syncthreads();
+            for (int k = 0; k < BK; ++k){
+                sum += Atile[ty*BK + k] * Btile[k*BK + tx];
+            }
+        }
+    }
+    C[row*N + col] = sum;
 }
