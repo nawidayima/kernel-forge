@@ -468,6 +468,8 @@ Plot all four points on the roofline diagram. Identify the crossover batch size 
 
 \subsection{Read rl-at-scale Ch\,2, Move\,2 (p.\,18--21)}
 
+\textbf{Companion read:} Kiely, \textit{Inference Engineering} (Baseten, 2026), \S2.4 derives the ops:byte ratio for an H100 (989\,TFLOP/s, 3.35\,TB/s, ridge $\approx$ 295) and arrives at 62\,ops/byte for $N=4096$, $d=128$ decode attention. Same numbers as the derivation above, framed for inference engineers rather than RL researchers; useful as an independent check. Ch\,3 covers GPU hardware from a spec-sheet angle, parallel to PMPP Ch\,4.
+
 Three kernel categories dominate RLVR inference wall time:
 \begin{itemize}
 \item \textbf{Attention kernels:} Naive attention materializes $O(N^2)$ intermediate scores. FlashAttention tiles Q, K, V into SRAM blocks, uses online softmax to accumulate without materializing the $N \times N$ matrix. HBM traffic drops from $\Theta(N^2 + Nd)$ to $\Theta(Nd)$.
@@ -500,6 +502,20 @@ Build kernels at the hand-written boundary, where \texttt{torch.compile} and CUT
 \begin{northstar}
 From Phase~6 on, correctness is the floor. A kernel earns its place by moving measured throughput on one of the target workloads (attention decode, fused CE backward, INT4 GEMM, MoE dispatch) enough to change the dollar cost of an experiment in RLVF, adaptive-depth training, or long-context research.
 \end{northstar}
+
+Each kernel below targets a specific inference bottleneck. Kiely Ch\,5 covers these techniques at the systems level (quantization, kernel fusion, parallelism, KV caching, disaggregation); read it for context on \emph{why} these kernels matter inside vLLM, SGLang, and TensorRT-LLM, not for the kernel implementations themselves.
+
+\medskip
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
+\toprule
+\textbf{Technique} & \textbf{Bottleneck addressed} & \textbf{Exercise} \\
+\midrule
+Online-softmax fusion & materializing the vocab-sized logit tensor & \texttt{cross\_entropy} (\#4) \\
+Tiled streaming attention & HBM traffic on the $N \times N$ score matrix & \texttt{flash\_attention} (\#5) \\
+Weight-only INT4 with fused dequant & decode bandwidth floor & \texttt{quantized\_gemm} (\#6) \\
+Gather--compute--scatter dispatch & irregular per-expert work, launch overhead & \texttt{moe\_dispatch} (\#7) \\
+\bottomrule
+\end{tabularx}
 
 \subsection{\texttt{kernels/cross\_entropy/2\_fused.cuh} (critical path \#4, fused)}
 
@@ -751,6 +767,11 @@ Full paper catalog (with PDFs) at \texttt{\~{}/Desktop/Karpathy/papers/kernel-fo
 \subsection*{Adaptive compute / research context}
 \begin{enumerate}[resume, label={[\arabic*]}]
 \item S.~Bae \textit{et~al.}, ``Mixture-of-Recursions: Learning Dynamic Recursive Depths for Adaptive Token-Level Computation,'' arXiv:2507.10524, 2025.
+\end{enumerate}
+
+\subsection*{Inference systems}
+\begin{enumerate}[resume, label={[\arabic*]}]
+\item P.~Kiely, \textit{Inference Engineering}, Baseten Books, 2026.
 \end{enumerate}
 
 \subsection*{Capstone (Phases 7--8)}
