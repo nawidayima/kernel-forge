@@ -39,20 +39,42 @@ __global__ void sgemm_tiled(int M, int N, int K,
 
     __shared__ float Atile[BK*BK];
     __shared__ float Btile[BK*BK];
-    float sum = 0;
-    for (int phase = 0; phase < K/BK; ++phase){ 
+    float sum = 0.0;
+    for (int phase = 0; phase < (K + BK - 1)/BK; ++phase){ 
 
         int A_load_col = phase*BK + tx;
         int B_load_row = phase*BK + ty;
-        
-        if (row < M && col < N){
+
+        if (row < M && A_load_col < K){
             Atile[ty*BK+tx] = A[row*K + A_load_col];
+        }
+        else {
+            Atile[ty*BK+tx] = 0.0;
+        }
+        
+        if (col < N && B_load_row < K){
             Btile[ty*BK+tx] = B[B_load_row*N + col];
-            __syncthreads();
+        }
+        else {
+            Btile[ty*BK+tx] = 0.0;
+        }
+        __syncthreads();
+
+        if (row < M && col < N){
             for (int k = 0; k < BK; ++k){
                 sum += Atile[ty*BK + k] * Btile[k*BK + tx];
             }
         }
+        __syncthreads();
+        // if (row < M && col < N){
+        //     Atile[ty*BK+tx] = A[row*K + A_load_col];
+        //     Btile[ty*BK+tx] = B[B_load_row*N + col];
+        //     __syncthreads();
+        //     for (int k = 0; k < BK; ++k){
+        //         sum += Atile[ty*BK + k] * Btile[k*BK + tx];
+        //     }
+        // }
+        // __syncthreads();
     }
     C[row*N + col] = sum;
 }

@@ -2,7 +2,7 @@
 
 A reproducible non-deterministic correctness failure in a tiled SGEMM kernel that's missing a second `__syncthreads()` at the end of each phase. The signature — same binary, same input, different bounded errors across runs, with one occasional pass — is the textbook fingerprint of an inter-warp race on shared memory.
 
-**Status:** bug present. Race empirically confirmed. Fix and post-fix verification pending.
+**Status:** race fixed for divisible tiles. Post-fix verification passes at `M=N=K=4096`; ragged boundary handling is a separate follow-up captured in `boundary-tiles.md`.
 
 ## The kernel under test
 
@@ -72,12 +72,19 @@ The bounded `max_abs` (1–7, not orders of magnitude off, no NaNs) is also info
 
 ## Performance footnote
 
-Even if correct, ~8.7% of cuBLAS is what the bare-bones tiled kernel delivers — `shared-memory-tiling.md` calls this out under "What it still doesn't fix." The next jump comes from register tiling (`register-tiling.md`), where each thread accumulates a TM × TN rectangle of outputs.
+After adding the second barrier, repeated `4096^3` runs passed verification:
+
+| Kernel | Time | Throughput | cuBLAS time | cuBLAS throughput | Ratio |
+|---|---:|---:|---:|---:|---:|
+| tiled SGEMM | ~72.07 ms | ~1906.9 GFLOP/s | ~6.0 ms | ~22.8 TFLOP/s | ~8.3-8.4% |
+
+Throughput stayed in the same band as the racey version (~1939 GFLOP/s before, ~1907 GFLOP/s after). The small slowdown is plausible: the fix adds one real block-wide barrier per phase. The main lesson is correctness, not speed.
+
+Even when correct, ~8-9% of cuBLAS is what the bare-bones tiled kernel delivers — `shared-memory-tiling.md` calls this out under "What it still doesn't fix." The next jump comes from register tiling (`register-tiling.md`), where each thread accumulates a TM × TN rectangle of outputs.
 
 ## Open
 
-- Post-fix throughput (after adding the second `__syncthreads()`): TBD — paste here for before/after.
-- A separate latent issue — `__syncthreads()` placed *inside* `if (row < M && col < N)` — would deadlock for non-multiple-of-BK problem sizes. Deferred while the divisibility assertions hold.
+- Ragged boundary tests now expose the next class of bugs: partial K phases, edge-block cooperative loads, and final C store guarding. See `boundary-tiles.md`.
 
 ## Context
 

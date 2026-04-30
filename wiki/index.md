@@ -14,6 +14,7 @@ Concepts learned through hands-on exercises. One page per transferable principle
 | [shared-memory-tiling](shared-memory-tiling.md) | Stage a BM×BK×BN tile into SMEM once per block; each loaded element reused across every thread in the block | _pending_ |
 | [shared-memory-banks](shared-memory-banks.md) | SMEM is 32 parallel banks; same-bank, different-address accesses serialize — broadcast and `+1` padding sidestep conflicts | _pending_ |
 | [case-syncthreads-race-matmul](case-syncthreads-race-matmul.md) | Empirically reproducing an inter-warp race from a missing `__syncthreads()`: 7/8 runs fail with bounded, scattered errors — the textbook race signature | matmul/2_tiled |
+| [boundary-tiles](boundary-tiles.md) | Ragged tiles need separate predicates for A loads, B loads, C stores, and unconditional barrier participation | matmul/2_tiled |
 | [register-tiling](register-tiling.md) | Each thread owns a TM×TN rectangle; outer-product inner loop turns few SMEM loads into many FMAs | _pending_ |
 | [warp-tiling](warp-tiling.md) | The middle tier — warps are what the hardware schedules, so the tile hierarchy needs a warp-shaped layer | _pending_ |
 | [occupancy](occupancy.md) | Three resources cap resident warps per SM; but more occupancy isn't always better | _pending_ |
