@@ -92,10 +92,10 @@
 {\today}
 \vfill
 \begin{northstar}
-\textbf{Compute cost per research experiment.}
+\textbf{Tokens per dollar.}
 
 \smallskip
-A kernel optimization earns its place on this curriculum if it measurably reduces the dollar cost of an experiment in the research loop that produces better models. Specific bottlenecks and workloads shift with the frontier; this metric does not.
+A kernel earns its place if it raises tokens per second per GPU on the workloads this curriculum targets: long-context decode, attention serving, quantized GEMM, MoE dispatch. The same kernel runs in production serving, RL rollouts, and evaluation. Cheaper inference pays in all three.
 \end{northstar}
 \vspace{1cm}
 \end{titlepage}
@@ -500,7 +500,7 @@ Build kernels at the hand-written boundary, where \texttt{torch.compile} and CUT
 \end{phasebox}
 
 \begin{northstar}
-From Phase~6 on, correctness is the floor. A kernel earns its place by moving measured throughput on one of the target workloads (attention decode, fused CE backward, INT4 GEMM, MoE dispatch) enough to change the dollar cost of an experiment in RLVF, adaptive-depth training, or long-context research.
+From Phase~6 on, correctness is the floor. A kernel earns its place by moving tokens per dollar on one of the target workloads: attention decode, fused CE backward, INT4 GEMM, or MoE dispatch.
 \end{northstar}
 
 Each kernel below targets a specific inference bottleneck. Kiely Ch\,5 covers these techniques at the systems level (quantization, kernel fusion, parallelism, KV caching, disaggregation); read it for context on \emph{why} these kernels matter inside vLLM, SGLang, and TensorRT-LLM, not for the kernel implementations themselves.
