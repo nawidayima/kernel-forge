@@ -1,6 +1,18 @@
 # kernel-forge
 
-A hands-on CUDA kernel engineering curriculum. Each exercise isolates a transferable GPU programming concept, progressing from naive matmul through FlashAttention and MoE dispatch. Build system, timing, profiling integration, and correctness verification are provided — the learner writes the kernels.
+A hands-on CUDA kernel engineering curriculum for the path from PMPP fundamentals to frontier inference kernels. The repo provides the build system, runners, timing, profiling hooks, correctness checks, and stub kernels; the learner writes the kernels.
+
+<p align="center">
+  <a href="docs/study-guide.pdf">
+    <img src="docs/study-guide-cover.png" alt="GPU Performance Engineering Study Guide cover" width="520">
+  </a>
+</p>
+
+## Start with the study guide
+
+The best overview is the [GPU Performance Engineering Study Guide](docs/study-guide.pdf). It explains the north star, the practice loop, and why these seven kernels are the critical path for reducing the cost of model research experiments.
+
+The repo is the companion codebase: each exercise isolates one transferable GPU programming concept, progressing from naive matmul through FlashAttention and MoE dispatch.
 
 See `docs/specs/2026-04-19-kernel-forge-design.md` for the design and literature review.
 
