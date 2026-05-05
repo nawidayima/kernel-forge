@@ -4,6 +4,7 @@
 
 - **Exercise:** Phase 2 (tiled SGEMM). Correctness now passing on all ragged sizes.
 - **Change:** Final `C[row*N + col] = sum` is hoisted out of the phase loop and guarded by `if (row < M && col < N)`. Previously it lived inside the phase loop inside the compute bounds-guard, so each output cell received P = ceil(K/BK) stores instead of 1.
+- **GPU:** NVIDIA L4 (RunPod, pod 9270hxgvsrb2ra). Same GPU as the Apr 21 baseline in `benchmark_results/matmul_L4_2026-04-21.csv`.
 
 ## Results
 
