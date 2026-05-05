@@ -66,15 +66,8 @@ __global__ void sgemm_tiled(int M, int N, int K,
             }
         }
         __syncthreads();
-        // if (row < M && col < N){
-        //     Atile[ty*BK+tx] = A[row*K + A_load_col];
-        //     Btile[ty*BK+tx] = B[B_load_row*N + col];
-        //     __syncthreads();
-        //     for (int k = 0; k < BK; ++k){
-        //         sum += Atile[ty*BK + k] * Btile[k*BK + tx];
-        //     }
-        // }
-        // __syncthreads();
     }
-    C[row*N + col] = sum;
+    if (row < M && col < N){
+        C[row*N + col] = sum;
+    }
 }
