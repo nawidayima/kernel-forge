@@ -64,6 +64,30 @@ The runner verifies post-kernel `C` against cuBLAS using `max_abs` and `max_rel`
 
 So any kernel where the *last* write to each `C[i]` is the correct dot product passes. Pre-fix in-loop store (E) is functionally equivalent to canonical post-loop store (B) at the verifier interface. Distinguishing them requires either timing comparison, an Nsight Compute store-count metric, or manual inspection.
 
+## Cross-kernel size sweep on L4
+
+Captured in `benchmark_results/matmul_L4_22e76ce_2026-05-05.csv` (filename SHA reflects HEAD when the script ran; pod is not a git repo so script tagged it `nogit` and we re-anchored locally).
+
+| size | kernel 1 (naive) GFLOP/s | kernel 2 (tiled, fixed) GFLOP/s | tiled vs naive | cuBLAS |
+| ---- | ------------------------ | ------------------------------- | -------------- | ------ |
+| 128  | 429                      | 368                             | -14%           | 656    |
+| 256  | 969                      | 822                             | -15%           | 4108   |
+| 512  | 1609                     | 1364                            | -15%           | 9457   |
+| 1024 | 1724                     | 1538                            | -11%           | 12962  |
+| 2048 | 1494                     | 1531                            | +2%            | 16079  |
+| 4096 | 1199                     | 1243                            | +4%            | 12407  |
+
+Two findings:
+
+1. **Reproducibility check.** Today's kernel 1 at 4096³ is 1199 GFLOP/s vs the Apr 21 baseline of 1181 (file `matmul_L4_2026-04-21.csv`). Within 2%, well inside run-to-run variance. The L4 baseline is stable.
+
+2. **Tiled is slower than naive at every size below 2048.** Only barely wins above. This is the actual lesson of the naive→tiled jump on Ampere+/Ada GPUs:
+   - L4 has ~48 MB of L2. Naive's "redundant" global reads are mostly L2 hits, so naive doesn't pay the full cost of reading A K times.
+   - Shared memory tiling does not change arithmetic intensity. Each thread still does 1 FMA per pair of operand loads, same as naive — shared memory is faster than global, but barrier and predicate overhead are real.
+   - At small sizes, there aren't enough blocks to fill the SMs, so per-block overhead dominates.
+
+   This matches Simon Boehm's CUDA SGEMM blog: kernel 2 (shared memory tiling) is barely a bump over kernel 1. The first dramatic jump is at register tiling, where each thread computes a TM×TN sub-tile and arithmetic intensity rises from 0.5 FMA/load to roughly TM\*TN / (TM+TN) FMA/load. That is the next phase.
+
 ## Open questions for next session
 
 1. Where is the kernel actually bottlenecked? `ncu --section ComputeWorkloadAnalysis --section MemoryWorkloadAnalysis ./build/matmul 2 1024 1024 1024` to find dominant stall reason.

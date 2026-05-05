@@ -1,0 +1,143 @@
+# EX=matmul kernel=1 size=128
+
+━━━ matmul kernel=1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  shape       M=128  K=128  N=128
+  verify      PASS  (max_abs=7.63e-06  max_rel=7.44e-04  tol=1e-02)
+  perf             0.010 ms        428.7 GFLOP/s
+  cuBLAS           0.006 ms        655.7 GFLOP/s
+  ratio       0.654  (65.4% of cuBLAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESULT exercise=matmul kernel=1 M=128 K=128 N=128 ms=0.009784 gflops=428.690 cublas_ms=0.006397 cublas_gflops=655.688
+
+# EX=matmul kernel=1 size=256
+
+━━━ matmul kernel=1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  shape       M=256  K=256  N=256
+  verify      PASS  (max_abs=1.43e-05  max_rel=6.89e-03  tol=1e-02)
+  perf             0.035 ms        969.0 GFLOP/s
+  cuBLAS           0.008 ms       4108.0 GFLOP/s
+  ratio       0.236  (23.6% of cuBLAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESULT exercise=matmul kernel=1 M=256 K=256 N=256 ms=0.034629 gflops=968.975 cublas_ms=0.008168 cublas_gflops=4108.035
+
+# EX=matmul kernel=1 size=512
+
+━━━ matmul kernel=1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  shape       M=512  K=512  N=512
+  verify      PASS  (max_abs=3.24e-05  max_rel=1.29e-01  tol=1e-02)
+  perf             0.167 ms       1609.2 GFLOP/s
+  cuBLAS           0.028 ms       9456.7 GFLOP/s
+  ratio       0.170  (17.0% of cuBLAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESULT exercise=matmul kernel=1 M=512 K=512 N=512 ms=0.166810 gflops=1609.233 cublas_ms=0.028386 cublas_gflops=9456.748
+
+# EX=matmul kernel=1 size=1024
+
+━━━ matmul kernel=1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  shape       M=1024  K=1024  N=1024
+  verify      PASS  (max_abs=7.63e-05  max_rel=1.73e-01  tol=1e-02)
+  perf             1.246 ms       1723.5 GFLOP/s
+  cuBLAS           0.166 ms      12962.5 GFLOP/s
+  ratio       0.133  (13.3% of cuBLAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESULT exercise=matmul kernel=1 M=1024 K=1024 N=1024 ms=1.245974 gflops=1723.538 cublas_ms=0.165669 cublas_gflops=12962.511
+
+# EX=matmul kernel=1 size=2048
+
+━━━ matmul kernel=1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  shape       M=2048  K=2048  N=2048
+  verify      PASS  (max_abs=1.60e-04  max_rel=2.61e+02  tol=1e-02)
+  perf            11.500 ms       1493.9 GFLOP/s
+  cuBLAS           1.068 ms      16079.2 GFLOP/s
+  ratio       0.093  (9.3% of cuBLAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESULT exercise=matmul kernel=1 M=2048 K=2048 N=2048 ms=11.499783 gflops=1493.930 cublas_ms=1.068456 cublas_gflops=16079.156
+
+# EX=matmul kernel=1 size=4096
+
+━━━ matmul kernel=1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  shape       M=4096  K=4096  N=4096
+  verify      PASS  (max_abs=0.00e+00  max_rel=0.00e+00  tol=1e-02)
+  perf           114.664 ms       1198.6 GFLOP/s
+  cuBLAS          11.078 ms      12406.5 GFLOP/s
+  ratio       0.097  (9.7% of cuBLAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESULT exercise=matmul kernel=1 M=4096 K=4096 N=4096 ms=114.664207 gflops=1198.621 cublas_ms=11.077951 cublas_gflops=12406.532
+
+# EX=matmul kernel=2 size=128
+
+━━━ matmul kernel=2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  shape       M=128  K=128  N=128
+  verify      PASS  (max_abs=7.63e-06  max_rel=7.44e-04  tol=1e-02)
+  perf             0.011 ms        368.2 GFLOP/s
+  cuBLAS           0.006 ms        651.0 GFLOP/s
+  ratio       0.566  (56.6% of cuBLAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESULT exercise=matmul kernel=2 M=128 K=128 N=128 ms=0.011392 gflops=368.180 cublas_ms=0.006443 cublas_gflops=650.966
+
+# EX=matmul kernel=2 size=256
+
+━━━ matmul kernel=2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  shape       M=256  K=256  N=256
+  verify      PASS  (max_abs=1.43e-05  max_rel=6.89e-03  tol=1e-02)
+  perf             0.041 ms        822.4 GFLOP/s
+  cuBLAS           0.008 ms       4108.0 GFLOP/s
+  ratio       0.200  (20.0% of cuBLAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESULT exercise=matmul kernel=2 M=256 K=256 N=256 ms=0.040800 gflops=822.413 cublas_ms=0.008168 cublas_gflops=4108.035
+
+# EX=matmul kernel=2 size=512
+
+━━━ matmul kernel=2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  shape       M=512  K=512  N=512
+  verify      PASS  (max_abs=3.24e-05  max_rel=1.29e-01  tol=1e-02)
+  perf             0.197 ms       1364.3 GFLOP/s
+  cuBLAS           0.029 ms       9359.7 GFLOP/s
+  ratio       0.146  (14.6% of cuBLAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESULT exercise=matmul kernel=2 M=512 K=512 N=512 ms=0.196757 gflops=1364.301 cublas_ms=0.028680 cublas_gflops=9359.674
+
+# EX=matmul kernel=2 size=1024
+
+━━━ matmul kernel=2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  shape       M=1024  K=1024  N=1024
+  verify      PASS  (max_abs=7.63e-05  max_rel=1.73e-01  tol=1e-02)
+  perf             1.397 ms       1537.7 GFLOP/s
+  cuBLAS           0.166 ms      12955.1 GFLOP/s
+  ratio       0.119  (11.9% of cuBLAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESULT exercise=matmul kernel=2 M=1024 K=1024 N=1024 ms=1.396589 gflops=1537.664 cublas_ms=0.165763 cublas_gflops=12955.129
+
+# EX=matmul kernel=2 size=2048
+
+━━━ matmul kernel=2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  shape       M=2048  K=2048  N=2048
+  verify      PASS  (max_abs=1.60e-04  max_rel=2.61e+02  tol=1e-02)
+  perf            11.221 ms       1531.1 GFLOP/s
+  cuBLAS           1.058 ms      16242.0 GFLOP/s
+  ratio       0.094  (9.4% of cuBLAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESULT exercise=matmul kernel=2 M=2048 K=2048 N=2048 ms=11.220504 gflops=1531.114 cublas_ms=1.057742 cublas_gflops=16242.017
+
+# EX=matmul kernel=2 size=4096
+
+━━━ matmul kernel=2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  shape       M=4096  K=4096  N=4096
+  verify      PASS  (max_abs=0.00e+00  max_rel=0.00e+00  tol=1e-02)
+  perf           110.532 ms       1243.4 GFLOP/s
+  cuBLAS          11.051 ms      12436.5 GFLOP/s
+  ratio       0.100  (10.0% of cuBLAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESULT exercise=matmul kernel=2 M=4096 K=4096 N=4096 ms=110.531601 gflops=1243.436 cublas_ms=11.051264 cublas_gflops=12436.492

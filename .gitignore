@@ -50,3 +50,9 @@ venv/
 
 # Local Claude Code settings
 .claude/
+
+# Whitelist: benchmark CSVs and logs are versioned artifacts.
+# These overrides come last so they win over both `benchmark_results/*` (line 8)
+# and the global `*.log` rule (line 17).
+!benchmark_results/*.csv
+!benchmark_results/*.log

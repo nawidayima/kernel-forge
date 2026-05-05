@@ -1,0 +1,16 @@
+# kernel-forge benchmark log
+# exercise: matmul
+# device  : NVIDIA L4 24GB (sm_89), RunPod L4 On-Demand
+# build   : CUDAARCHS=89, -DCMAKE_BUILD_TYPE=Release
+# commit  : f4d5a1c
+# date    : 2026-04-21
+
+━━━ matmul kernel=1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  shape       M=4096  K=4096  N=4096
+  verify      PASS  (max_abs=0.00e+00  max_rel=0.00e+00  tol=1e-02)
+  perf           116.409 ms       1180.7 GFLOP/s
+  cuBLAS          11.425 ms      12029.4 GFLOP/s
+  ratio       0.098  (9.8% of cuBLAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RESULT exercise=matmul kernel=1 M=4096 K=4096 N=4096 ms=116.409195 gflops=1180.654 cublas_ms=11.425280 cublas_gflops=12029.373

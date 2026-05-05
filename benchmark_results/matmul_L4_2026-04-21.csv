@@ -1,0 +1,2 @@
+exercise,kernel,M,K,N,ms,gflops,cublas_ms,cublas_gflops
+matmul,1,4096,4096,4096,116.409195,1180.654,11.425280,12029.373
